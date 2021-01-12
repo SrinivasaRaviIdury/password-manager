@@ -1,7 +1,9 @@
 # credits:https://www.udemy.com/course/100-days-of-code/
-from tkinter import *
-from tkinter import messagebox
+import json
 import random
+from tkinter import messagebox
+from tkinter import *
+
 import pyperclip
 
 PINK = "#e2979c"
@@ -39,18 +41,49 @@ def generate_password():
 
 # ---------------------------- SAVE PASSWORD ------------------------------- #
 def save_data_to_file():
-    website = website_entry.get()
+    website = website_entry.get().lower()
     email = Email_entry.get()
     password = Password_entry.get()
+    new_data = {
+        website: {
+            "email": email,
+            "password": password
+        }
+    }
     if website == "" or password == "":
         messagebox.showwarning(title="Alert!", message=f"Don't leave fields empty")
-        return
-    is_ok = messagebox.askokcancel(title=website, message=f"These are the details entered \n{email},\n{password}")
-    if is_ok:
-        with open("data.txt", "a") as f:
-            f.write(f"{website} | {email} | {password}\n")
+    else:
+        try:
+            with open("data.json", "r") as f:
+                # Reading old data
+                data = json.load(f)
+        except FileNotFoundError:
+            with open("data.json", "w") as f:
+                # saving the updated data
+                json.dump(new_data, f, indent=4)
+        else:
+            data.update(new_data)
+            with open("data.json", "w") as f:
+                json.dump(data, f, indent=4)
+        finally:
             website_entry.delete(0, END)
             Password_entry.delete(0, END)
+
+
+def find_password():
+    website = website_entry.get().lower()
+    try:
+        with open("data.json", 'r') as data_file:
+            data = json.load(data_file)
+    except FileNotFoundError:
+        messagebox.showerror(title="Error", message="No Data File found")
+
+    else:
+        if website in data:
+            messagebox.showinfo(title="information",
+                                message=f"website: {website},\n password:{data[website].get('password')}")
+        else:
+            messagebox.showinfo(title="No Details", message="No Details for the website exists")
 
 
 # ---------------------------- UI SETUP ------------------------------- #
@@ -69,9 +102,12 @@ canvas.grid(row=1, column=1)
 website_label = Label(text="Website:", font=(FONT_NAME, 15), fg="black", bg=YELLOW)
 website_label.grid(row=2, column=0)
 
-website_entry = Entry(width=50)
-website_entry.grid(row=2, column=1, columnspan=2)
+website_entry = Entry(width=32)
+website_entry.grid(row=2, column=1)
 website_entry.focus()
+
+search_button = Button(text="Search", command=find_password)
+search_button.grid(row=2, column=2)
 
 Email_label = Label(text="Email/Username:", font=(FONT_NAME, 15), fg="black", bg=YELLOW)
 Email_label.grid(row=3, column=0)
